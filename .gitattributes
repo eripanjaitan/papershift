@@ -1,0 +1,14 @@
+# Normalize line endings in the repository; check out with the platform default.
+* text=auto
+
+# Shell scripts must keep LF to run on Linux/macOS and in CI.
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Windows scripts keep CRLF.
+*.bat text eol=crlf
+
+*.jar binary
+*.png binary
+*.webp binary
+*.ttf binary
