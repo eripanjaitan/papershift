@@ -1,7 +1,6 @@
 package com.papershift.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -34,9 +33,6 @@ private val PaperShiftColors = darkColorScheme(
     outline = Color(0xFF948E9F),
     outlineVariant = Color(0xFF494453),
 )
-
-// TODO(PRD §8): bundle Plus Jakarta Sans (OFL) and set it here; system sans-serif until then.
-private val PaperShiftTypography = Typography()
 
 @Composable
 fun PaperShiftTheme(content: @Composable () -> Unit) {

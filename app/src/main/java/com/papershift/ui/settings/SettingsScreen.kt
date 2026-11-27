@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,9 +20,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,6 +55,26 @@ fun SettingsScreen(
     val settings = state.settings
     val versionName = remember {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
+    }
+    var showFontLicense by rememberSaveable { mutableStateOf(false) }
+    if (showFontLicense) {
+        val license = remember {
+            context.resources.openRawResource(R.raw.plus_jakarta_sans_ofl).bufferedReader().use { it.readText() }
+        }
+        AlertDialog(
+            onDismissRequest = { showFontLicense = false },
+            title = { Text(stringResource(R.string.font_license_title)) },
+            text = {
+                Text(
+                    text = license,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showFontLicense = false }) { Text(stringResource(R.string.close)) }
+            },
+        )
     }
 
     Scaffold(
@@ -144,6 +170,16 @@ fun SettingsScreen(
 
             SectionCard(title = stringResource(R.string.section_about)) {
                 InfoRow(stringResource(R.string.version_label, versionName))
+                // The OFL requires the license to accompany the bundled font.
+                Text(
+                    text = stringResource(R.string.font_license_row),
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(role = Role.Button) { showFontLicense = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
             }
         }
     }
