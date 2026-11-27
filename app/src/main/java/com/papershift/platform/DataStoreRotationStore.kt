@@ -56,6 +56,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         pauseOnBatterySaver = p[PAUSE_SAVER] ?: true,
         pauseOnLowBattery = p[PAUSE_LOW] ?: true,
         unmeteredOnly = p[UNMETERED_ONLY] ?: true,
+        askedNotificationPermission = p[ASKED_NOTIFICATIONS] ?: false,
     )
 
     private fun writeSettings(p: MutablePreferences, s: RotationSettings) {
@@ -66,6 +67,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         p[PAUSE_SAVER] = s.pauseOnBatterySaver
         p[PAUSE_LOW] = s.pauseOnLowBattery
         p[UNMETERED_ONLY] = s.unmeteredOnly
+        p[ASKED_NOTIFICATIONS] = s.askedNotificationPermission
     }
 
     private fun readState(p: Preferences): RotationState {
@@ -120,6 +122,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         val PAUSE_SAVER = booleanPreferencesKey("pause_battery_saver")
         val PAUSE_LOW = booleanPreferencesKey("pause_low_battery")
         val UNMETERED_ONLY = booleanPreferencesKey("unmetered_only")
+        val ASKED_NOTIFICATIONS = booleanPreferencesKey("asked_notification_permission")
 
         val SHUFFLE_SEED = longPreferencesKey("shuffle_seed")
         val SHUFFLE_POSITION = intPreferencesKey("shuffle_position")

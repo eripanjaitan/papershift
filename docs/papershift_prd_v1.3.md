@@ -330,7 +330,7 @@ PaperShift does **not** request `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`. The Sett
 
 **Device matrix:** Android 10, 11, 12, 13, 14, 15, 16, 17 (API 29–37) on a mix of Pixel, Samsung, Xiaomi, OnePlus/Oppo and Motorola, including at least one foldable, one tablet, and one 720p device.
 
-**Forcing a run during tests:** `adb shell cmd jobscheduler run -f <package> <jobId>` (job id from `adb shell dumpsys jobscheduler | grep <package>`).
+**Forcing a run during tests:** debug builds include an adb-only receiver that runs a shift exactly like a scheduled background run: `adb shell am broadcast -n com.papershift/.debug.DebugShiftReceiver`. (`adb shell cmd jobscheduler run -f` does not work for this: WorkManager skips periodic work that runs before its scheduled time.)
 
 ### 6.2 Functional Test Suites
 

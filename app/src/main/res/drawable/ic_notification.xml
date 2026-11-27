@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon: the launcher's stacked cards, single colour as the system requires. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.55"
+        android:pathData="M5.6,4.9l7.9,-1.4a1.2,1.2 0,0 1,1.4 1l2.3,13a1.2,1.2 0,0 1,-1 1.4l-7.9,1.4a1.2,1.2 0,0 1,-1.4 -1l-2.3,-13a1.2,1.2 0,0 1,1 -1.4z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.2,5h8.6a1.2,1.2 0,0 1,1.2 1.2v13.6a1.2,1.2 0,0 1,-1.2 1.2h-8.6a1.2,1.2 0,0 1,-1.2 -1.2v-13.6a1.2,1.2 0,0 1,1.2 -1.2z" />
+</vector>

@@ -19,42 +19,48 @@ class ShiftEngine(
     private val decoder: ImageDecoderPort,
     private val wallpaper: WallpaperPort,
     private val device: DevicePort,
+    private val notifier: NotifierPort,
     private val clock: () -> Long = System::currentTimeMillis,
     private val random: Random = Random.Default,
 ) {
+    /** Per-run context. The engine is shared, so this is passed along, not stored. */
+    private class Run(val manual: Boolean, val attempt: Int)
+
     /**
-     * @param manual true for Start and Shift Now, which ignore the Battery Saver pause.
+     * @param manual true for Start and Shift Now: they ignore the Battery Saver pause and
+     *   never notify, because the user is looking at the app.
      * @param attempt WorkManager's runAttemptCount (0 for the first try).
      */
     suspend fun run(manual: Boolean, attempt: Int): RunResult {
-        if (!wallpaper.isAllowed()) return finish(ShiftOutcome.WALLPAPER_NOT_ALLOWED)
+        val run = Run(manual, attempt)
+        if (!wallpaper.isAllowed()) return finish(run, ShiftOutcome.WALLPAPER_NOT_ALLOWED)
 
         val settings = store.settings.first()
         if (!manual && settings.pauseOnBatterySaver && device.isPowerSaveMode()) {
-            return finish(ShiftOutcome.SKIPPED_BATTERY_SAVER)
+            return finish(run, ShiftOutcome.SKIPPED_BATTERY_SAVER)
         }
 
         val target = device.targetSize()
         return when (settings.source) {
-            Source.Gallery -> runGallery(settings, target, attempt)
-            Source.Bing -> runBing(target, attempt)
+            Source.Gallery -> runGallery(run, settings, target)
+            Source.Bing -> runBing(run, target)
         }
     }
 
-    private suspend fun runGallery(settings: RotationSettings, target: PixelSize, attempt: Int): RunResult {
-        val folder = settings.folderUri ?: return finish(ShiftOutcome.FOLDER_MISSING)
+    private suspend fun runGallery(run: Run, settings: RotationSettings, target: PixelSize): RunResult {
+        val folder = settings.folderUri ?: return finish(run, ShiftOutcome.FOLDER_MISSING)
         val images = try {
             gallery.list(folder)
         } catch (e: FolderMissing) {
-            return finish(ShiftOutcome.FOLDER_MISSING)
+            return finish(run, ShiftOutcome.FOLDER_MISSING)
         } catch (e: AccessLost) {
-            return finish(ShiftOutcome.ACCESS_LOST)
+            return finish(run, ShiftOutcome.ACCESS_LOST)
         }
-        if (images.isEmpty()) return finish(ShiftOutcome.NO_IMAGES)
+        if (images.isEmpty()) return finish(run, ShiftOutcome.NO_IMAGES)
 
         var shuffle = store.state.first().shuffle
         repeat(minOf(MAX_DECODE_ATTEMPTS, images.size)) {
-            val (image, next) = Shuffle.next(images, shuffle, random) ?: return finish(ShiftOutcome.NO_IMAGES)
+            val (image, next) = Shuffle.next(images, shuffle, random) ?: return finish(run, ShiftOutcome.NO_IMAGES)
             shuffle = next
             val decoded = try {
                 decoder.decode(ImageInput.Content(image.uri), target)
@@ -65,19 +71,19 @@ class ShiftEngine(
                 wallpaper.apply(decoded)
             } catch (e: TransientFailure) {
                 store.updateState { it.copy(shuffle = next) }
-                return retryOrGiveUp(attempt)
+                return retryOrGiveUp(run)
             } finally {
                 decoded.release()
             }
             val applied = next.copy(lastAppliedId = image.id)
             store.updateState { it.copy(shuffle = applied, credit = null, creditLink = null, currentBingDate = null) }
-            return finish(ShiftOutcome.SUCCESS)
+            return finish(run, ShiftOutcome.SUCCESS)
         }
         store.updateState { it.copy(shuffle = shuffle) }
-        return finish(ShiftOutcome.DECODE_FAILED)
+        return finish(run, ShiftOutcome.DECODE_FAILED)
     }
 
-    private suspend fun runBing(target: PixelSize, attempt: Int): RunResult {
+    private suspend fun runBing(run: Run, target: PixelSize): RunResult {
         try {
             val state = store.state.first()
             val archive = bing.fetchArchive(device.bingMarket())
@@ -98,22 +104,31 @@ class ShiftEngine(
                     creditLink = choice.copyrightLink,
                 )
             }
-            return finish(ShiftOutcome.SUCCESS)
+            return finish(run, ShiftOutcome.SUCCESS)
         } catch (e: TransientFailure) {
-            return retryOrGiveUp(attempt)
+            return retryOrGiveUp(run)
         } catch (e: DecodeFailure) {
             // A truncated or corrupt download (EC-06) is retried like a network error.
-            return retryOrGiveUp(attempt)
+            return retryOrGiveUp(run)
         }
     }
 
-    private suspend fun retryOrGiveUp(attempt: Int): RunResult =
-        if (attempt < MAX_RETRIES) RunResult(outcome = null, retry = true) else finish(ShiftOutcome.FAILED_TRANSIENT)
+    private suspend fun retryOrGiveUp(run: Run): RunResult =
+        if (run.attempt < MAX_RETRIES) RunResult(outcome = null, retry = true) else finish(run, ShiftOutcome.FAILED_TRANSIENT)
 
-    private suspend fun finish(outcome: ShiftOutcome): RunResult {
+    private suspend fun finish(run: Run, outcome: ShiftOutcome): RunResult {
         val now = clock()
-        store.updateState { it.copy(lastOutcome = outcome, lastOutcomeAt = now) }
+        var previous: ShiftOutcome? = null
+        store.updateState {
+            previous = it.lastOutcome
+            it.copy(lastOutcome = outcome, lastOutcomeAt = now)
+        }
         if (outcome.stopsRotation) store.updateSettings { it.copy(rotationEnabled = false) }
+        when (NotificationRules.decide(outcome, previous, run.manual)) {
+            NotifyAction.Show -> notifier.show(outcome)
+            NotifyAction.Clear -> notifier.clear()
+            NotifyAction.None -> Unit
+        }
         return RunResult(outcome = outcome, retry = false)
     }
 

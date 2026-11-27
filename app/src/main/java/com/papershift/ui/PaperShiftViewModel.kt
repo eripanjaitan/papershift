@@ -38,6 +38,8 @@ data class UiState(
     val folderImageCount: Int? = null,
     val wallpaperAllowed: Boolean = true,
     val batteryUnrestricted: Boolean = false,
+    /** Problem alerts can be shown (permission granted and not blocked). */
+    val notificationsEnabled: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -76,6 +78,7 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
             folderImageCount = count,
             wallpaperAllowed = graph.wallpaper.isAllowed(),
             batteryUnrestricted = app.getSystemService<PowerManager>()?.isIgnoringBatteryOptimizations(app.packageName) == true,
+            notificationsEnabled = graph.notifier.isEnabled(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState())
 
@@ -88,7 +91,13 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
     fun start() = viewModelScope.launch {
         val settings = store.updateSettings { it.copy(rotationEnabled = true) }
         store.updateState { it.copy(lastOutcome = null) }
+        graph.notifier.clear()
         scheduler.start(settings)
+    }
+
+    /** Called right before the system prompt is shown, so it is never shown again. */
+    fun markNotificationPermissionAsked() = viewModelScope.launch {
+        store.updateSettings { it.copy(askedNotificationPermission = true) }
     }
 
     fun pause() = viewModelScope.launch {
@@ -121,6 +130,7 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
         } ?: return@launch
 
         val previous = store.state.first().lastOutcome
+        graph.notifier.clear()
         store.updateState {
             it.copy(
                 shuffle = null,

@@ -1,6 +1,8 @@
 package com.papershift.ui.rotator
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -29,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -65,12 +68,34 @@ fun RotatorScreen(
     onPause: () -> Unit,
     onShiftNow: () -> Unit,
     hasLiveWallpaper: () -> Boolean,
+    onNotificationPermissionAsked: () -> Unit,
+    chooseFolderRequested: Boolean,
+    onChooseFolderHandled: () -> Unit,
 ) {
     val settings = state.settings
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) onFolderPicked(uri)
     }
     var confirmLiveWallpaper by rememberSaveable { mutableStateOf(false) }
+
+    // Opened from the notification's "Choose folder" action.
+    LaunchedEffect(chooseFolderRequested) {
+        if (chooseFolderRequested) {
+            onChooseFolderHandled()
+            pickFolder.launch(null)
+        }
+    }
+
+    // Android 13+: ask for alerts once, on the first Start; rotation starts whatever the answer.
+    val requestNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onStart() }
+    val startRotation = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !state.notificationsEnabled && !settings.askedNotificationPermission) {
+            onNotificationPermissionAsked()
+            requestNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            onStart()
+        }
+    }
 
     val needsFolder = settings.source == Source.Gallery && settings.folderUri == null
     val canStart = state.wallpaperAllowed && !needsFolder
@@ -132,7 +157,7 @@ fun RotatorScreen(
                     when {
                         settings.rotationEnabled -> onPause()
                         hasLiveWallpaper() -> confirmLiveWallpaper = true
-                        else -> onStart()
+                        else -> startRotation()
                     }
                 },
                 enabled = settings.rotationEnabled || canStart,
@@ -169,7 +194,7 @@ fun RotatorScreen(
             confirmButton = {
                 TextButton(onClick = {
                     confirmLiveWallpaper = false
-                    onStart()
+                    startRotation()
                 }) { Text(stringResource(R.string.live_wallpaper_confirm)) }
             },
             dismissButton = {
@@ -293,6 +318,9 @@ private fun RotatorScreenPreview() {
             onPause = {},
             onShiftNow = {},
             hasLiveWallpaper = { false },
+            onNotificationPermissionAsked = {},
+            chooseFolderRequested = false,
+            onChooseFolderHandled = {},
         )
     }
 }

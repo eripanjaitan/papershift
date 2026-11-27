@@ -6,6 +6,7 @@ import com.papershift.core.ShiftEngine
 import com.papershift.platform.AndroidDevice
 import com.papershift.platform.BingClient
 import com.papershift.platform.DataStoreRotationStore
+import com.papershift.platform.ProblemNotifier
 import com.papershift.platform.SafGallery
 import com.papershift.platform.SystemWallpaper
 import com.papershift.platform.WallpaperDecoder
@@ -22,6 +23,7 @@ class AppGraph(context: Context) {
     val wallpaper = SystemWallpaper(context)
     val device = AndroidDevice(context)
     val scheduler = RotationScheduler(context)
+    val notifier = ProblemNotifier(context)
     val engine by lazy {
         ShiftEngine(
             store = store,
@@ -30,6 +32,7 @@ class AppGraph(context: Context) {
             decoder = WallpaperDecoder(context),
             wallpaper = wallpaper,
             device = device,
+            notifier = notifier,
         )
     }
 }

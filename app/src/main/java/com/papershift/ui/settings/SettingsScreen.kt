@@ -97,6 +97,21 @@ fun SettingsScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 )
                 InfoRow(stringResource(R.string.oem_helper), secondary = true)
+                // EC-11: opens the app's notification settings, where alerts can be turned on or off.
+                Text(
+                    text = stringResource(if (state.notificationsEnabled) R.string.alerts_on else R.string.alerts_off),
+                    color = if (state.notificationsEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(role = Role.Button) {
+                            context.startActivity(
+                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
+                            )
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
                 SwitchRow(
                     title = stringResource(R.string.pause_battery_saver),
                     subtitle = null,

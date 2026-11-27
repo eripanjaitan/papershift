@@ -38,6 +38,15 @@
     <string name="attention_decode_failed">PaperShift couldn\'t read the images in this folder.</string>
     <string name="attention_not_allowed">Your device doesn\'t allow changing the wallpaper.</string>
 
+    <!-- Problem notification (EC-11) -->
+    <string name="notif_channel_name">Rotation problems</string>
+    <string name="notif_channel_description">Alerts when PaperShift can\'t change your wallpaper until you fix something.</string>
+    <string name="notif_title_paused">Wallpaper rotation paused</string>
+    <string name="notif_title_not_changing">Wallpaper not changing</string>
+    <string name="notif_action_choose_folder">Choose folder</string>
+    <string name="alerts_on">Problem alerts: On</string>
+    <string name="alerts_off">Problem alerts: Off — Turn on</string>
+
     <!-- Live wallpaper confirmation (EC-09) -->
     <string name="live_wallpaper_title">Replace live wallpaper?</string>
     <string name="live_wallpaper_body">A live wallpaper is active. PaperShift will replace it with photos.</string>

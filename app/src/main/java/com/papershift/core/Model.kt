@@ -16,6 +16,8 @@ data class RotationSettings(
     val pauseOnBatterySaver: Boolean = true,
     val pauseOnLowBattery: Boolean = true,
     val unmeteredOnly: Boolean = true,
+    /** The Android 13+ notification prompt is shown at most once (EC-11 proposal). */
+    val askedNotificationPermission: Boolean = false,
 )
 
 /**

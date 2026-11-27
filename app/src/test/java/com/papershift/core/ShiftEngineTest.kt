@@ -70,6 +70,16 @@ class ShiftEngineTest {
         }
     }
 
+    private class FakeNotifier : NotifierPort {
+        val events = mutableListOf<String>()
+        override fun show(outcome: ShiftOutcome) {
+            events += "show:$outcome"
+        }
+        override fun clear() {
+            events += "clear"
+        }
+    }
+
     private class FakeDevice(var powerSave: Boolean = false) : DevicePort {
         override fun isPowerSaveMode() = powerSave
         override fun targetSize() = PixelSize(1080, 2400)
@@ -88,8 +98,9 @@ class ShiftEngineTest {
     private var decoder = FakeDecoder()
     private val wallpaper = FakeWallpaper()
     private val device = FakeDevice()
+    private val notifier = FakeNotifier()
 
-    private fun engine() = ShiftEngine(store, gallery, bing, decoder, wallpaper, device, clock = { 42L }, random = Random(1))
+    private fun engine() = ShiftEngine(store, gallery, bing, decoder, wallpaper, device, notifier, clock = { 42L }, random = Random(1))
 
     private suspend fun lastOutcome() = store.state.first().lastOutcome
 
@@ -247,5 +258,48 @@ class ShiftEngineTest {
         store.settings.value = bingSettings
         decoder = FakeDecoder(badUris = setOf("bytes"))
         assertThat(engine().run(manual = false, attempt = 0).retry).isTrue()
+    }
+
+    // ---- Problem notifications (EC-11) -------------------------------------------------
+
+    @Test
+    fun `background folder loss notifies`() = runTest {
+        gallery.error = FolderMissing("gone")
+        engine().run(manual = false, attempt = 0)
+        assertThat(notifier.events).containsExactly("show:FOLDER_MISSING")
+    }
+
+    @Test
+    fun `manual run with a problem does not notify`() = runTest {
+        gallery.error = AccessLost("revoked")
+        engine().run(manual = true, attempt = 0)
+        assertThat(notifier.events).isEmpty()
+    }
+
+    @Test
+    fun `empty folder notifies once across runs`() = runTest {
+        gallery.images = emptyList()
+        val engine = engine()
+        repeat(3) { engine.run(manual = false, attempt = 0) }
+        assertThat(notifier.events).containsExactly("show:NO_IMAGES")
+    }
+
+    @Test
+    fun `a successful shift clears the alert`() = runTest {
+        gallery.images = emptyList()
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        gallery.images = folder
+        engine.run(manual = false, attempt = 0)
+        assertThat(notifier.events).containsExactly("show:NO_IMAGES", "clear").inOrder()
+    }
+
+    @Test
+    fun `retries and transient failures stay silent`() = runTest {
+        store.settings.value = bingSettings
+        bing.failures = 10
+        engine().run(manual = false, attempt = 0)
+        engine().run(manual = false, attempt = ShiftEngine.MAX_RETRIES)
+        assertThat(notifier.events).isEmpty()
     }
 }
