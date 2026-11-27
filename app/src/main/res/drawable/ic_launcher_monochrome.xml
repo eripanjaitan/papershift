@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon (Android 13+): single-colour silhouette of the Day cycle icon. The launcher
+     tints it, so only the alpha channel matters. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Frame outline -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M41.5,34.5h25a7,7 0,0 1,7 7v25a7,7 0,0 1,-7 7h-25a7,7 0,0 1,-7 -7v-25a7,7 0,0 1,7 -7z" />
+    <!-- Day / night divider -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.5"
+        android:pathData="M72,36L36,72" />
+    <!-- Sun -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M45,45m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <!-- Crescent moon -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M62.22,56.55A6.5,6.5 0,1 0,69.26 64.76A5.5,5.5 0,0 1,62.22 56.55z" />
+</vector>

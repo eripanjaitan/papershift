@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- PaperShift launcher icon "Day cycle" — master artwork on the 108x108 adaptive-icon
+     canvas. The launcher shows the centre 72x72 (18..90) and masks it to its own shape;
+     the artwork stays inside the 66-unit safe zone. Android copies live in
+     app/src/main/res/drawable/ic_launcher_{foreground,monochrome}.xml and ic_notification.xml. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <defs>
+    <clipPath id="frame">
+      <rect x="33" y="33" width="42" height="42" rx="8"/>
+    </clipPath>
+  </defs>
+  <rect width="108" height="108" fill="#14121A"/>
+  <g clip-path="url(#frame)">
+    <rect x="33" y="33" width="42" height="42" fill="#2E2547"/>
+    <polygon points="33,33 75,33 33,75" fill="#7C4DFF"/>
+    <circle cx="45" cy="45" r="5.5" fill="#FFFFFF"/>
+    <path d="M62.22 56.55A6.5 6.5 0 1 0 69.26 64.76A5.5 5.5 0 0 1 62.22 56.55Z" fill="#B39DDB"/>
+  </g>
+</svg>

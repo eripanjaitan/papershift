@@ -31,3 +31,4 @@ Install on a running emulator or connected phone:
 | `app/src/main/java/com/papershift/ui/settings` | Settings screen (PRD §5.2) |
 | `app/src/main/java/com/papershift/ui/theme` | Dark-only Material 3 theme (PRD §8) |
 | `docs/` | Product requirements |
+| `art/` | Master launcher icon (`icon.svg`) and the 512 px Google Play icon |
