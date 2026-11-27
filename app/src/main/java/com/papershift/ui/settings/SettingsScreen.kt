@@ -50,6 +50,7 @@ fun SettingsScreen(
     onPauseOnBatterySaver: (Boolean) -> Unit,
     onPauseOnLowBattery: (Boolean) -> Unit,
     onUnmeteredOnly: (Boolean) -> Unit,
+    onPauseOnOutsideChange: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val settings = state.settings
@@ -166,6 +167,12 @@ fun SettingsScreen(
 
             SectionCard(title = stringResource(R.string.section_display)) {
                 InfoRow(stringResource(R.string.display_note))
+                SwitchRow(
+                    title = stringResource(R.string.pause_outside_change),
+                    subtitle = stringResource(R.string.pause_outside_change_sub),
+                    checked = settings.pauseOnOutsideChange,
+                    onChange = onPauseOnOutsideChange,
+                )
             }
 
             SectionCard(title = stringResource(R.string.section_about)) {

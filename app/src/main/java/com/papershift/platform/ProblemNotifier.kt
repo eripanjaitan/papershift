@@ -45,7 +45,7 @@ class ProblemNotifier(context: Context) : NotifierPort {
             .setContentIntent(openApp(chooseFolder = false))
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
-        if (outcome != ShiftOutcome.WALLPAPER_NOT_ALLOWED) {
+        if (outcome.isFolderProblem) {
             builder.addAction(0, app.getString(R.string.notif_action_choose_folder), openApp(chooseFolder = true))
         }
         try {
@@ -87,6 +87,7 @@ class ProblemNotifier(context: Context) : NotifierPort {
             ShiftOutcome.ACCESS_LOST -> R.string.attention_access_lost
             ShiftOutcome.NO_IMAGES -> R.string.attention_no_images
             ShiftOutcome.DECODE_FAILED -> R.string.attention_decode_failed
+            ShiftOutcome.CHANGED_ELSEWHERE -> R.string.attention_changed_elsewhere
             else -> R.string.attention_not_allowed
         }
     }

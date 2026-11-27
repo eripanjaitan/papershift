@@ -20,6 +20,7 @@ import com.papershift.core.DevicePort
 import com.papershift.core.PixelSize
 import com.papershift.core.TransientFailure
 import com.papershift.core.WallpaperPort
+import com.papershift.core.WallpaperStamp
 import java.io.IOException
 import java.util.Locale
 
@@ -38,6 +39,16 @@ class SystemWallpaper(context: Context) : WallpaperPort {
         } catch (e: IOException) {
             throw TransientFailure("setBitmap failed", e)
         }
+    }
+
+    override fun currentStamp(): WallpaperStamp? = try {
+        WallpaperStamp(
+            systemId = manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM),
+            lockId = manager.getWallpaperId(WallpaperManager.FLAG_LOCK),
+            live = manager.wallpaperInfo != null,
+        )
+    } catch (e: SecurityException) {
+        null // Some OEM builds restrict wallpaper queries; detection is then simply off.
     }
 }
 

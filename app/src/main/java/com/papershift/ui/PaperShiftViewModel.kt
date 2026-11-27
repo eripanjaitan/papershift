@@ -8,7 +8,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.papershift.core.RotationSettings
 import com.papershift.core.RotationStatus
-import com.papershift.core.ShiftOutcome
 import com.papershift.core.Source
 import com.papershift.core.StatusRules
 import com.papershift.graph
@@ -90,7 +89,10 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
 
     fun start() = viewModelScope.launch {
         val settings = store.updateSettings { it.copy(rotationEnabled = true) }
-        store.updateState { it.copy(lastOutcome = null) }
+        // Starting means "take over from whatever is on screen now" (EC-18), so the current
+        // wallpaper becomes the baseline even if the immediate shift is still waiting.
+        val current = graph.wallpaper.currentStamp()
+        store.updateState { it.copy(lastOutcome = null, baseline = current) }
         graph.notifier.clear()
         scheduler.start(settings)
     }
@@ -117,6 +119,15 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setUnmeteredOnly(enabled: Boolean) = updateSettings { it.copy(unmeteredOnly = enabled) }
 
+    /** Turning detection back on accepts the current wallpaper, so changes made while it was off don't count. */
+    fun setPauseOnOutsideChange(enabled: Boolean) = viewModelScope.launch {
+        if (enabled) {
+            val current = graph.wallpaper.currentStamp()
+            store.updateState { it.copy(baseline = current) }
+        }
+        store.updateSettings { it.copy(pauseOnOutsideChange = enabled) }
+    }
+
     /** SAF picker result. Resumes rotation if a folder error had stopped it (PRD §2.3). */
     fun onFolderPicked(uri: Uri) = viewModelScope.launch {
         val before = store.settings.first()
@@ -134,11 +145,11 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
         store.updateState {
             it.copy(
                 shuffle = null,
-                lastOutcome = it.lastOutcome.takeUnless { o -> o in FOLDER_OUTCOMES },
+                lastOutcome = it.lastOutcome.takeUnless { o -> o?.isFolderProblem == true },
             )
         }
         val settings = store.updateSettings { it.copy(folderUri = uri.toString(), folderName = name) }
-        if (!settings.rotationEnabled && previous != null && previous in FOLDER_OUTCOMES && previous.stopsRotation) {
+        if (!settings.rotationEnabled && previous != null && previous.isFolderProblem && previous.stopsRotation) {
             start()
         } else {
             scheduler.updateSchedule(settings)
@@ -151,11 +162,5 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
 
     private companion object {
         const val TICK_MILLIS = 60_000L
-        val FOLDER_OUTCOMES = setOf(
-            ShiftOutcome.FOLDER_MISSING,
-            ShiftOutcome.ACCESS_LOST,
-            ShiftOutcome.NO_IMAGES,
-            ShiftOutcome.DECODE_FAILED,
-        )
     }
 }

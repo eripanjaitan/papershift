@@ -52,6 +52,7 @@ import com.papershift.core.ShiftOutcome
 import com.papershift.core.Source
 import com.papershift.core.StatusRules
 import com.papershift.core.WaitReason
+import com.papershift.platform.ProblemNotifier
 import com.papershift.ui.UiState
 import com.papershift.ui.components.SectionCard
 import com.papershift.ui.theme.PaperShiftTheme
@@ -128,7 +129,7 @@ fun RotatorScreen(
             if (attention != null) {
                 AttentionBanner(
                     outcome = attention,
-                    onClick = if (attention == ShiftOutcome.WALLPAPER_NOT_ALLOWED) null else ({ pickFolder.launch(null) }),
+                    onClick = if (attention.isFolderProblem) ({ pickFolder.launch(null) }) else null,
                 )
             }
 
@@ -233,13 +234,7 @@ private fun FolderRow(name: String?, imageCount: Int?, onChoose: () -> Unit) {
 
 @Composable
 private fun AttentionBanner(outcome: ShiftOutcome, onClick: (() -> Unit)?) {
-    val message = when (outcome) {
-        ShiftOutcome.FOLDER_MISSING -> R.string.attention_folder_missing
-        ShiftOutcome.ACCESS_LOST -> R.string.attention_access_lost
-        ShiftOutcome.NO_IMAGES -> R.string.attention_no_images
-        ShiftOutcome.DECODE_FAILED -> R.string.attention_decode_failed
-        else -> R.string.attention_not_allowed
-    }
+    val message = ProblemNotifier.messageFor(outcome)
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.errorContainer,

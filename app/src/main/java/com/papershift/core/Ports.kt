@@ -43,6 +43,9 @@ interface WallpaperPort {
 
     /** Sets home and lock screen together (decision #4). Throws [TransientFailure]. */
     fun apply(image: DecodedImage)
+
+    /** Current wallpaper IDs and live state, or null if the system won't say (EC-18). */
+    fun currentStamp(): WallpaperStamp?
 }
 
 interface DevicePort {

@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
                         onPauseOnBatterySaver = { vm.setPauseOnBatterySaver(it) },
                         onPauseOnLowBattery = { vm.setPauseOnLowBattery(it) },
                         onUnmeteredOnly = { vm.setUnmeteredOnly(it) },
+                        onPauseOnOutsideChange = { vm.setPauseOnOutsideChange(it) },
                     )
                 } else {
                     RotatorScreen(

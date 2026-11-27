@@ -36,6 +36,11 @@ class ShiftEngine(
         if (!wallpaper.isAllowed()) return finish(run, ShiftOutcome.WALLPAPER_NOT_ALLOWED)
 
         val settings = store.settings.first()
+        // EC-18: something else replaced the wallpaper since PaperShift last set it. Pause
+        // rather than fight it. Start and Shift Now are explicit requests and skip this.
+        if (!manual && settings.pauseOnOutsideChange && changedElsewhere()) {
+            return finish(run, ShiftOutcome.CHANGED_ELSEWHERE)
+        }
         if (!manual && settings.pauseOnBatterySaver && device.isPowerSaveMode()) {
             return finish(run, ShiftOutcome.SKIPPED_BATTERY_SAVER)
         }
@@ -76,7 +81,10 @@ class ShiftEngine(
                 decoded.release()
             }
             val applied = next.copy(lastAppliedId = image.id)
-            store.updateState { it.copy(shuffle = applied, credit = null, creditLink = null, currentBingDate = null) }
+            val stamp = wallpaper.currentStamp()
+            store.updateState {
+                it.copy(shuffle = applied, credit = null, creditLink = null, currentBingDate = null, baseline = stamp)
+            }
             return finish(run, ShiftOutcome.SUCCESS)
         }
         store.updateState { it.copy(shuffle = shuffle) }
@@ -96,12 +104,14 @@ class ShiftEngine(
             } finally {
                 decoded.release()
             }
+            val stamp = wallpaper.currentStamp()
             store.updateState {
                 it.copy(
                     bingAppliedDates = BingRules.recordApplied(it.bingAppliedDates, choice.startDate),
                     currentBingDate = choice.startDate,
                     credit = choice.copyright,
                     creditLink = choice.copyrightLink,
+                    baseline = stamp,
                 )
             }
             return finish(run, ShiftOutcome.SUCCESS)
@@ -111,6 +121,13 @@ class ShiftEngine(
             // A truncated or corrupt download (EC-06) is retried like a network error.
             return retryOrGiveUp(run)
         }
+    }
+
+    /** True when the wallpaper no longer matches the baseline. Unknown on either side = no. */
+    private suspend fun changedElsewhere(): Boolean {
+        val baseline = store.state.first().baseline ?: return false
+        val current = wallpaper.currentStamp() ?: return false
+        return current != baseline
     }
 
     private suspend fun retryOrGiveUp(run: Run): RunResult =

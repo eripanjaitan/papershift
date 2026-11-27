@@ -61,12 +61,21 @@ class ShiftEngineTest {
         }
     }
 
+    /** Behaves like WallpaperManager: every newly set wallpaper gets a new ID. */
     private class FakeWallpaper(var allowed: Boolean = true) : WallpaperPort {
         val applied = mutableListOf<String>()
+        var stamp: WallpaperStamp? = WallpaperStamp(systemId = 1, lockId = 1, live = false)
         override fun isAllowed() = allowed
-        override fun hasLiveWallpaper() = false
+        override fun hasLiveWallpaper() = stamp?.live == true
         override fun apply(image: DecodedImage) {
             applied += (image as FakeImage).source
+            stamp = stamp?.let { WallpaperStamp(it.systemId + 1, it.lockId + 1, live = false) }
+        }
+        override fun currentStamp() = stamp
+
+        /** Another app (or the user) sets a wallpaper. */
+        fun changeOutside(live: Boolean = false) {
+            stamp = stamp?.let { WallpaperStamp(it.systemId + 100, it.lockId + 100, live) }
         }
     }
 
@@ -292,6 +301,77 @@ class ShiftEngineTest {
         gallery.images = folder
         engine.run(manual = false, attempt = 0)
         assertThat(notifier.events).containsExactly("show:NO_IMAGES", "clear").inOrder()
+    }
+
+    // ---- Outside changes (EC-18) -------------------------------------------------------
+
+    @Test
+    fun `first run has no baseline, applies and records one`() = runTest {
+        assertThat(engine().run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.SUCCESS)
+        assertThat(store.state.value.baseline).isEqualTo(wallpaper.stamp)
+    }
+
+    @Test
+    fun `outside change pauses the next scheduled run`() = runTest {
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.changeOutside()
+        val result = engine.run(manual = false, attempt = 0)
+        assertThat(result.outcome).isEqualTo(ShiftOutcome.CHANGED_ELSEWHERE)
+        assertThat(result.stopsRotation).isTrue()
+        assertThat(store.settings.value.rotationEnabled).isFalse()
+        assertThat(wallpaper.applied).hasSize(1)
+        assertThat(notifier.events).containsExactly("clear", "show:CHANGED_ELSEWHERE").inOrder()
+    }
+
+    @Test
+    fun `a live wallpaper switched on later counts as an outside change`() = runTest {
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.changeOutside(live = true)
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.CHANGED_ELSEWHERE)
+    }
+
+    @Test
+    fun `consecutive own shifts never look like outside changes`() = runTest {
+        val engine = engine()
+        repeat(4) { assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.SUCCESS) }
+    }
+
+    @Test
+    fun `shift now overrides an outside change and resets the baseline`() = runTest {
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.changeOutside()
+        assertThat(engine.run(manual = true, attempt = 0).outcome).isEqualTo(ShiftOutcome.SUCCESS)
+        assertThat(store.state.value.baseline).isEqualTo(wallpaper.stamp)
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.SUCCESS)
+    }
+
+    @Test
+    fun `detection can be turned off`() = runTest {
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        store.settings.value = store.settings.value.copy(pauseOnOutsideChange = false)
+        wallpaper.changeOutside()
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.SUCCESS)
+    }
+
+    @Test
+    fun `unknown wallpaper IDs disable detection instead of pausing`() = runTest {
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.stamp = null
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.SUCCESS)
+    }
+
+    @Test
+    fun `bing shifts record the baseline too`() = runTest {
+        store.settings.value = bingSettings
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.changeOutside()
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.CHANGED_ELSEWHERE)
     }
 
     @Test

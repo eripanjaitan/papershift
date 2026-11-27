@@ -17,6 +17,7 @@
 | 1.3 | Fixed technical contradictions and filled gaps found in review: Bing cadence vs. 12h rotation (§5.3); WorkManager policy `KEEP` → `UPDATE` and network constraint scoped to Bing mode (§4.3); battery features mapped to real APIs (§4.4); decode pipeline rewritten around `ImageDecoder` (§4.2); zero-storage claim made precise and testable (§4.1, TC-BING-02); state machine gains WAITING / SKIPPED / NEEDS_ATTENTION (§2.3); home-screen-only scope for v1.0 made explicit; in-app **Shift Now** moved into MVP; "Both" source moved to v1.1; EXIF, HEIF, live wallpaper, device-policy and backup/restore edge cases added; permissions, non-goals, success metrics, accessibility, localization and risk sections added; test matrix extended to Android 16 and OEMs; design tokens translated from Tailwind to Compose/Material 3; vendor-specific terms removed. |
 | 1.3 (decisions, 2026-11-26) | Recorded the 9 product decisions in §13: Bing ships in v1.0 as an accepted risk with per-image credit; v1.0 sets **home and lock screen together** (replaces "home only"); dark theme only; "Both" source stays v1.1; Shift Now, Battery Saver skip, backup off, no crash reporting and the 720 px minimum confirmed. Bing image variants verified against the live endpoint. |
 | 1.3 (SDK, 2026-11-26) | targetSdk raised from 36 to 37 (Android 17); compileSdk set to 37.2 because Compose 1.13 requires 37.1 or newer; Android 17 added to the device matrix. |
+| 1.3 (conflicts, 2026-11-27) | EC-18 added: detect and pause on wallpaper changes made outside PaperShift (decision #10); EC-15 updated; new Settings toggle in §5.2. |
 
 ---
 
@@ -292,6 +293,7 @@ PaperShift does **not** request `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`. The Sett
    - **Storage statement:** "PaperShift never saves downloaded or processed images to your device."
 4. **Display**
    - Static note: "Images are automatically center-cropped to fill your screen."
+   - **Toggle: Pause if another app changes the wallpaper** (default ON, EC-18). Subtitle: "Stops PaperShift and your phone's own wallpaper changer from overwriting each other."
 5. **About**
    - App version, open-source licenses, Bing image attribution (title/copyright string from the Bing response for the current image), privacy statement (§10).
 
@@ -399,9 +401,10 @@ PaperShift does **not** request `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`. The Sett
 | **EC-12** | Extreme/ultra power-saving mode | Background work blocked by the OS | No special handling; WorkManager runs once the mode ends | None |
 | **EC-13** | Wallpaper changes blocked by device policy | `isSetWallpaperAllowed()` = false or `isWallpaperSupported()` = false | Disable Start; if detected in the worker, cancel works → NEEDS_ATTENTION | *"Your device doesn't allow changing the wallpaper."* |
 | **EC-14** | Settings changed while a run is in progress | Run uses old settings | The running job finishes with the old settings; changes apply from the next run | None |
-| **EC-15** | User changes wallpaper manually in system settings | PaperShift overwrites it on the next run | Expected behaviour while rotation is on | None (documented in onboarding copy) |
+| **EC-15** | User changes wallpaper manually in system settings | PaperShift would overwrite it on the next run | Handled by EC-18: a manual change is indistinguishable from another app's, so the next scheduled run pauses instead (unless the EC-18 toggle is off) | EC-18 banner and notification |
 | **EC-16** | User had a separate lock screen wallpaper | It is replaced by the shared image | Expected in v1.0 (§4.2 step 4); separate images are v1.1 | Helper text on Start: *"Changes your home and lock screen."* |
 | **EC-17** | Device's own lock screen feature (rotating lock screen stories, etc.) is active | It may override the lock wallpaper | Out of scope; PaperShift does not detect or disable it | None |
+| **EC-18** | Another app (e.g. the phone maker's wallpaper changer) or the user sets a wallpaper, or turns on a live wallpaper, while rotation is on | The two keep overwriting each other | After each shift, store the system wallpaper IDs (`getWallpaperId` for home and lock) and live state. A scheduled run that finds them changed skips the shift, records `CHANGED_ELSEWHERE` and stops rotation. Start and Shift Now skip the check and take over; Start makes the current wallpaper the new baseline. If the IDs can't be read, detection is off. Lock-screen overlays that don't set a real wallpaper can't be detected (see EC-17). Settings toggle "Pause if another app changes the wallpaper" (default on) turns it off | Banner: *"Your wallpaper was changed outside PaperShift, so rotation is paused. If your phone has its own wallpaper changer, turn one of them off, then tap Start."* + notification (EC-11 rules) |
 
 ---
 
@@ -493,3 +496,4 @@ Decided 2026-11-26.
 | 7 | Crash reporting | None; Play Console Android vitals only | §10, §12 |
 | 8 | Theme | Dark only in v1.0; light theme and dynamic color in v1.1 | §1.2, §8, TC-UX-05, §9.2 |
 | 9 | Minimum resolution | Skip images whose shorter side is < 720 px | §4.2, EC-03 |
+| 10 | Conflicting wallpaper changers (2026-11-27) | Detect outside changes by wallpaper ID and pause rather than overwrite; toggle in Settings, default on. Replaces "overwrite on next run" for manual changes | §5.2, EC-15, EC-18 |

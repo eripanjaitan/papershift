@@ -18,12 +18,20 @@ data class RotationSettings(
     val unmeteredOnly: Boolean = true,
     /** The Android 13+ notification prompt is shown at most once (EC-11 proposal). */
     val askedNotificationPermission: Boolean = false,
+    /** EC-18: pause instead of overwriting when something else changed the wallpaper. */
+    val pauseOnOutsideChange: Boolean = true,
 )
+
+/**
+ * The system's view of the current wallpaper (EC-18). Android gives every newly set
+ * wallpaper a new ID, so a different stamp means something replaced the wallpaper.
+ */
+data class WallpaperStamp(val systemId: Int, val lockId: Int, val live: Boolean)
 
 /**
  * Result of one shift attempt (PRD §2.3).
  * [needsAttention]: show a banner. [stopsRotation]: the schedule is cancelled because
- * retrying later can't succeed without the user (EC-01, EC-11, EC-13).
+ * retrying later can't succeed without the user (EC-01, EC-11, EC-13, EC-18).
  */
 enum class ShiftOutcome(val needsAttention: Boolean, val stopsRotation: Boolean) {
     SUCCESS(false, false),
@@ -34,6 +42,11 @@ enum class ShiftOutcome(val needsAttention: Boolean, val stopsRotation: Boolean)
     FOLDER_MISSING(true, true),
     ACCESS_LOST(true, true),
     WALLPAPER_NOT_ALLOWED(true, true),
+    CHANGED_ELSEWHERE(true, true),
+    ;
+
+    /** Problems the user fixes by picking a folder. */
+    val isFolderProblem: Boolean get() = this in setOf(FOLDER_MISSING, ACCESS_LOST, NO_IMAGES, DECODE_FAILED)
 }
 
 /** Internal state the worker keeps between runs (PRD §5.3). */
@@ -45,6 +58,8 @@ data class RotationState(
     val creditLink: String? = null,
     val lastOutcome: ShiftOutcome? = null,
     val lastOutcomeAt: Long = 0L,
+    /** The wallpaper as PaperShift last left it, or as the user accepted it on Start (EC-18). */
+    val baseline: WallpaperStamp? = null,
 )
 
 data class GalleryImage(val id: String, val uri: String, val lastModified: Long)

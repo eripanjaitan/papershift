@@ -58,6 +58,16 @@ class ProblemNotifierTest {
     }
 
     @Test
+    fun `outside change explains the conflict without a folder action`() {
+        notifier.show(ShiftOutcome.CHANGED_ELSEWHERE)
+        val n = posted().single()
+        assertThat(n.extras.getString(Notification.EXTRA_TITLE)).isEqualTo("Wallpaper rotation paused")
+        assertThat(n.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
+            .startsWith("Your wallpaper was changed outside PaperShift")
+        assertThat(n.actions).isNull()
+    }
+
+    @Test
     fun `a newer problem replaces the old one and clear removes it`() {
         notifier.show(ShiftOutcome.NO_IMAGES)
         notifier.show(ShiftOutcome.ACCESS_LOST)

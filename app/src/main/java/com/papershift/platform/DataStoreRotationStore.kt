@@ -16,6 +16,7 @@ import com.papershift.core.RotationStore
 import com.papershift.core.ShiftOutcome
 import com.papershift.core.ShuffleState
 import com.papershift.core.Source
+import com.papershift.core.WallpaperStamp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -57,6 +58,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         pauseOnLowBattery = p[PAUSE_LOW] ?: true,
         unmeteredOnly = p[UNMETERED_ONLY] ?: true,
         askedNotificationPermission = p[ASKED_NOTIFICATIONS] ?: false,
+        pauseOnOutsideChange = p[PAUSE_OUTSIDE_CHANGE] ?: true,
     )
 
     private fun writeSettings(p: MutablePreferences, s: RotationSettings) {
@@ -68,6 +70,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         p[PAUSE_LOW] = s.pauseOnLowBattery
         p[UNMETERED_ONLY] = s.unmeteredOnly
         p[ASKED_NOTIFICATIONS] = s.askedNotificationPermission
+        p[PAUSE_OUTSIDE_CHANGE] = s.pauseOnOutsideChange
     }
 
     private fun readState(p: Preferences): RotationState {
@@ -88,6 +91,9 @@ class DataStoreRotationStore(context: Context) : RotationStore {
             creditLink = p[CREDIT_LINK],
             lastOutcome = p[LAST_OUTCOME]?.let { runCatching { ShiftOutcome.valueOf(it) }.getOrNull() },
             lastOutcomeAt = p[LAST_OUTCOME_AT] ?: 0L,
+            baseline = p[BASELINE_SYSTEM]?.let { system ->
+                WallpaperStamp(systemId = system, lockId = p[BASELINE_LOCK] ?: -1, live = p[BASELINE_LIVE] ?: false)
+            },
         )
     }
 
@@ -108,6 +114,15 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         p.putOrRemove(CREDIT_LINK, s.creditLink)
         p.putOrRemove(LAST_OUTCOME, s.lastOutcome?.name)
         p[LAST_OUTCOME_AT] = s.lastOutcomeAt
+        val baseline = s.baseline
+        if (baseline == null) {
+            listOf(BASELINE_SYSTEM, BASELINE_LOCK).forEach { p.remove(it) }
+            p.remove(BASELINE_LIVE)
+        } else {
+            p[BASELINE_SYSTEM] = baseline.systemId
+            p[BASELINE_LOCK] = baseline.lockId
+            p[BASELINE_LIVE] = baseline.live
+        }
     }
 
     private fun <T> MutablePreferences.putOrRemove(key: Preferences.Key<T>, value: T?) {
@@ -123,6 +138,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         val PAUSE_LOW = booleanPreferencesKey("pause_low_battery")
         val UNMETERED_ONLY = booleanPreferencesKey("unmetered_only")
         val ASKED_NOTIFICATIONS = booleanPreferencesKey("asked_notification_permission")
+        val PAUSE_OUTSIDE_CHANGE = booleanPreferencesKey("pause_on_outside_change")
 
         val SHUFFLE_SEED = longPreferencesKey("shuffle_seed")
         val SHUFFLE_POSITION = intPreferencesKey("shuffle_position")
@@ -135,5 +151,8 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         val CREDIT_LINK = stringPreferencesKey("credit_link")
         val LAST_OUTCOME = stringPreferencesKey("last_outcome")
         val LAST_OUTCOME_AT = longPreferencesKey("last_outcome_at")
+        val BASELINE_SYSTEM = intPreferencesKey("baseline_system_id")
+        val BASELINE_LOCK = intPreferencesKey("baseline_lock_id")
+        val BASELINE_LIVE = booleanPreferencesKey("baseline_live")
     }
 }

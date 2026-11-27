@@ -37,6 +37,7 @@
     <string name="attention_no_images">This folder has no photos PaperShift can use. Add images or pick another folder.</string>
     <string name="attention_decode_failed">PaperShift couldn\'t read the images in this folder.</string>
     <string name="attention_not_allowed">Your device doesn\'t allow changing the wallpaper.</string>
+    <string name="attention_changed_elsewhere">Your wallpaper was changed outside PaperShift, so rotation is paused. If your phone has its own wallpaper changer, turn one of them off, then tap Start.</string>
 
     <!-- Problem notification (EC-11) -->
     <string name="notif_channel_name">Rotation problems</string>
@@ -70,6 +71,8 @@
     <string name="storage_statement">PaperShift never saves downloaded or processed images to your device.</string>
     <string name="section_display">Display</string>
     <string name="display_note">Images are automatically center-cropped to fill your screen.</string>
+    <string name="pause_outside_change">Pause if another app changes the wallpaper</string>
+    <string name="pause_outside_change_sub">Stops PaperShift and your phone\'s own wallpaper changer from overwriting each other.</string>
     <string name="section_about">About</string>
     <string name="version_label">Version %1$s</string>
     <string name="font_license_row">Font: Plus Jakarta Sans (SIL Open Font License 1.1)</string>
