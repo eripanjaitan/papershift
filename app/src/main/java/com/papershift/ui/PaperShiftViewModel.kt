@@ -119,6 +119,17 @@ class PaperShiftViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setUnmeteredOnly(enabled: Boolean) = updateSettings { it.copy(unmeteredOnly = enabled) }
 
+    /**
+     * Switching modes changes which screens PaperShift owns, so the current wallpaper
+     * becomes the new baseline (EC-18); otherwise a lock-screen change made while in
+     * home-only mode would look like a conflict after switching back.
+     */
+    fun setHomeScreenOnly(enabled: Boolean) = viewModelScope.launch {
+        val current = graph.wallpaper.currentStamp()
+        store.updateState { it.copy(baseline = current) }
+        store.updateSettings { it.copy(homeScreenOnly = enabled) }
+    }
+
     /** Turning detection back on accepts the current wallpaper, so changes made while it was off don't count. */
     fun setPauseOnOutsideChange(enabled: Boolean) = viewModelScope.launch {
         if (enabled) {

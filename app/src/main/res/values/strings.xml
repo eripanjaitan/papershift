@@ -12,6 +12,7 @@
     <string name="pause_rotation">Pause Rotation</string>
     <string name="shift_now">Shift Now</string>
     <string name="start_helper">Changes your home and lock screen.</string>
+    <string name="start_helper_home_only">Changes your home screen only.</string>
     <string name="folder_change">Change</string>
     <plurals name="folder_photo_count">
         <item quantity="one">%d photo</item>
@@ -71,6 +72,8 @@
     <string name="storage_statement">PaperShift never saves downloaded or processed images to your device.</string>
     <string name="section_display">Display</string>
     <string name="display_note">Images are automatically center-cropped to fill your screen.</string>
+    <string name="home_screen_only">Home screen only</string>
+    <string name="home_screen_only_sub">Leave the lock screen alone, for example if your phone shows its own lock-screen photos.</string>
     <string name="pause_outside_change">Pause if another app changes the wallpaper</string>
     <string name="pause_outside_change_sub">Stops PaperShift and your phone\'s own wallpaper changer from overwriting each other.</string>
     <string name="section_about">About</string>

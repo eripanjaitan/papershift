@@ -20,13 +20,23 @@ data class RotationSettings(
     val askedNotificationPermission: Boolean = false,
     /** EC-18: pause instead of overwriting when something else changed the wallpaper. */
     val pauseOnOutsideChange: Boolean = true,
+    /** Decision #11: change only the home screen and leave the lock screen alone. */
+    val homeScreenOnly: Boolean = false,
 )
 
 /**
  * The system's view of the current wallpaper (EC-18). Android gives every newly set
  * wallpaper a new ID, so a different stamp means something replaced the wallpaper.
  */
-data class WallpaperStamp(val systemId: Int, val lockId: Int, val live: Boolean)
+data class WallpaperStamp(val systemId: Int, val lockId: Int, val live: Boolean) {
+    /**
+     * True if the wallpaper PaperShift manages has changed. In home-screen-only mode the
+     * lock screen belongs to someone else (the user, or the phone's lock-screen photos),
+     * so its ID is ignored.
+     */
+    fun differsFrom(other: WallpaperStamp, homeScreenOnly: Boolean): Boolean =
+        systemId != other.systemId || live != other.live || (!homeScreenOnly && lockId != other.lockId)
+}
 
 /**
  * Result of one shift attempt (PRD §2.3).

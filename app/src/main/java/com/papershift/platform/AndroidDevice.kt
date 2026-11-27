@@ -31,11 +31,18 @@ class SystemWallpaper(context: Context) : WallpaperPort {
 
     override fun hasLiveWallpaper(): Boolean = manager.wallpaperInfo != null
 
-    override fun apply(image: DecodedImage) {
+    override fun apply(image: DecodedImage, homeScreenOnly: Boolean) {
         val bitmap = (image as BitmapImage).bitmap
+        // Both: one call so home and lock always match (PRD §4.2 step 4, decision #4).
+        // Home only: if the lock screen was sharing the home wallpaper, Android first copies
+        // the current one to the lock screen, so the lock screen keeps what it showed.
+        val which = if (homeScreenOnly) {
+            WallpaperManager.FLAG_SYSTEM
+        } else {
+            WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
+        }
         try {
-            // One call so home and lock always match (PRD §4.2 step 4, decision #4).
-            manager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK)
+            manager.setBitmap(bitmap, null, true, which)
         } catch (e: IOException) {
             throw TransientFailure("setBitmap failed", e)
         }

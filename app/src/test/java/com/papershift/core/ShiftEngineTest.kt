@@ -64,18 +64,27 @@ class ShiftEngineTest {
     /** Behaves like WallpaperManager: every newly set wallpaper gets a new ID. */
     private class FakeWallpaper(var allowed: Boolean = true) : WallpaperPort {
         val applied = mutableListOf<String>()
+        val homeOnlyFlags = mutableListOf<Boolean>()
         var stamp: WallpaperStamp? = WallpaperStamp(systemId = 1, lockId = 1, live = false)
         override fun isAllowed() = allowed
         override fun hasLiveWallpaper() = stamp?.live == true
-        override fun apply(image: DecodedImage) {
+        override fun apply(image: DecodedImage, homeScreenOnly: Boolean) {
             applied += (image as FakeImage).source
-            stamp = stamp?.let { WallpaperStamp(it.systemId + 1, it.lockId + 1, live = false) }
+            homeOnlyFlags += homeScreenOnly
+            stamp = stamp?.let {
+                WallpaperStamp(it.systemId + 1, if (homeScreenOnly) it.lockId else it.lockId + 1, live = false)
+            }
         }
         override fun currentStamp() = stamp
 
         /** Another app (or the user) sets a wallpaper. */
         fun changeOutside(live: Boolean = false) {
             stamp = stamp?.let { WallpaperStamp(it.systemId + 100, it.lockId + 100, live) }
+        }
+
+        /** The phone's lock-screen photos (or the user) change only the lock screen. */
+        fun changeLockOutside() {
+            stamp = stamp?.let { it.copy(lockId = it.lockId + 100) }
         }
     }
 
@@ -368,6 +377,49 @@ class ShiftEngineTest {
     @Test
     fun `bing shifts record the baseline too`() = runTest {
         store.settings.value = bingSettings
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.changeOutside()
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.CHANGED_ELSEWHERE)
+    }
+
+    // ---- Home screen only (decision #11) ----------------------------------------------
+
+    @Test
+    fun `home and lock are set together by default`() = runTest {
+        engine().run(manual = false, attempt = 0)
+        assertThat(wallpaper.homeOnlyFlags).containsExactly(false)
+    }
+
+    @Test
+    fun `home screen only mode leaves the lock screen alone`() = runTest {
+        store.settings.value = gallerySettings.copy(homeScreenOnly = true)
+        engine().run(manual = false, attempt = 0)
+        store.settings.value = bingSettings.copy(homeScreenOnly = true)
+        engine().run(manual = false, attempt = 0)
+        assertThat(wallpaper.homeOnlyFlags).containsExactly(true, true)
+    }
+
+    @Test
+    fun `lock screen changes are ignored in home screen only mode`() = runTest {
+        store.settings.value = gallerySettings.copy(homeScreenOnly = true)
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.changeLockOutside()
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.SUCCESS)
+    }
+
+    @Test
+    fun `lock screen changes still pause when PaperShift owns both screens`() = runTest {
+        val engine = engine()
+        engine.run(manual = false, attempt = 0)
+        wallpaper.changeLockOutside()
+        assertThat(engine.run(manual = false, attempt = 0).outcome).isEqualTo(ShiftOutcome.CHANGED_ELSEWHERE)
+    }
+
+    @Test
+    fun `home screen changes still pause in home screen only mode`() = runTest {
+        store.settings.value = gallerySettings.copy(homeScreenOnly = true)
         val engine = engine()
         engine.run(manual = false, attempt = 0)
         wallpaper.changeOutside()

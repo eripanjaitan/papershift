@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,6 +52,7 @@ fun SettingsScreen(
     onPauseOnLowBattery: (Boolean) -> Unit,
     onUnmeteredOnly: (Boolean) -> Unit,
     onPauseOnOutsideChange: (Boolean) -> Unit,
+    onHomeScreenOnly: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val settings = state.settings
@@ -168,6 +170,12 @@ fun SettingsScreen(
             SectionCard(title = stringResource(R.string.section_display)) {
                 InfoRow(stringResource(R.string.display_note))
                 SwitchRow(
+                    title = stringResource(R.string.home_screen_only),
+                    subtitle = stringResource(R.string.home_screen_only_sub),
+                    checked = settings.homeScreenOnly,
+                    onChange = onHomeScreenOnly,
+                )
+                SwitchRow(
                     title = stringResource(R.string.pause_outside_change),
                     subtitle = stringResource(R.string.pause_outside_change_sub),
                     checked = settings.pauseOnOutsideChange,
@@ -216,7 +224,8 @@ private fun SwitchRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, role = Role.Switch) { onChange(!checked) }
+            // toggleable (not clickable) so TalkBack announces the on/off state (TC-A11Y-01).
+            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .alpha(if (enabled) 1f else 0.5f),
     ) {

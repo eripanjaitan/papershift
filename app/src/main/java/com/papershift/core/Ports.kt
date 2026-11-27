@@ -41,8 +41,11 @@ interface WallpaperPort {
     fun isAllowed(): Boolean
     fun hasLiveWallpaper(): Boolean
 
-    /** Sets home and lock screen together (decision #4). Throws [TransientFailure]. */
-    fun apply(image: DecodedImage)
+    /**
+     * Sets home and lock screen together (decision #4), or only the home screen when
+     * [homeScreenOnly] is true (decision #11). Throws [TransientFailure].
+     */
+    fun apply(image: DecodedImage, homeScreenOnly: Boolean)
 
     /** Current wallpaper IDs and live state, or null if the system won't say (EC-18). */
     fun currentStamp(): WallpaperStamp?

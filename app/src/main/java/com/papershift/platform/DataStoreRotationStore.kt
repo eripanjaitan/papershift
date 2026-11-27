@@ -59,6 +59,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         unmeteredOnly = p[UNMETERED_ONLY] ?: true,
         askedNotificationPermission = p[ASKED_NOTIFICATIONS] ?: false,
         pauseOnOutsideChange = p[PAUSE_OUTSIDE_CHANGE] ?: true,
+        homeScreenOnly = p[HOME_SCREEN_ONLY] ?: false,
     )
 
     private fun writeSettings(p: MutablePreferences, s: RotationSettings) {
@@ -71,6 +72,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         p[UNMETERED_ONLY] = s.unmeteredOnly
         p[ASKED_NOTIFICATIONS] = s.askedNotificationPermission
         p[PAUSE_OUTSIDE_CHANGE] = s.pauseOnOutsideChange
+        p[HOME_SCREEN_ONLY] = s.homeScreenOnly
     }
 
     private fun readState(p: Preferences): RotationState {
@@ -139,6 +141,7 @@ class DataStoreRotationStore(context: Context) : RotationStore {
         val UNMETERED_ONLY = booleanPreferencesKey("unmetered_only")
         val ASKED_NOTIFICATIONS = booleanPreferencesKey("asked_notification_permission")
         val PAUSE_OUTSIDE_CHANGE = booleanPreferencesKey("pause_on_outside_change")
+        val HOME_SCREEN_ONLY = booleanPreferencesKey("home_screen_only")
 
         val SHUFFLE_SEED = longPreferencesKey("shuffle_seed")
         val SHUFFLE_POSITION = intPreferencesKey("shuffle_position")

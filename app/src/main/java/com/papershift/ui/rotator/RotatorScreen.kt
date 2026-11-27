@@ -167,7 +167,13 @@ fun RotatorScreen(
                 Text(stringResource(if (settings.rotationEnabled) R.string.pause_rotation else R.string.start_rotation))
             }
             Text(
-                text = stringResource(if (needsFolder) R.string.choose_folder_first else R.string.start_helper),
+                text = stringResource(
+                    when {
+                        needsFolder -> R.string.choose_folder_first
+                        settings.homeScreenOnly -> R.string.start_helper_home_only
+                        else -> R.string.start_helper
+                    },
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

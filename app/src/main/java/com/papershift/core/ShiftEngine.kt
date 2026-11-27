@@ -38,7 +38,7 @@ class ShiftEngine(
         val settings = store.settings.first()
         // EC-18: something else replaced the wallpaper since PaperShift last set it. Pause
         // rather than fight it. Start and Shift Now are explicit requests and skip this.
-        if (!manual && settings.pauseOnOutsideChange && changedElsewhere()) {
+        if (!manual && settings.pauseOnOutsideChange && changedElsewhere(settings.homeScreenOnly)) {
             return finish(run, ShiftOutcome.CHANGED_ELSEWHERE)
         }
         if (!manual && settings.pauseOnBatterySaver && device.isPowerSaveMode()) {
@@ -48,7 +48,7 @@ class ShiftEngine(
         val target = device.targetSize()
         return when (settings.source) {
             Source.Gallery -> runGallery(run, settings, target)
-            Source.Bing -> runBing(run, target)
+            Source.Bing -> runBing(run, settings, target)
         }
     }
 
@@ -73,7 +73,7 @@ class ShiftEngine(
                 return@repeat // EC-03: try the next image.
             }
             try {
-                wallpaper.apply(decoded)
+                wallpaper.apply(decoded, settings.homeScreenOnly)
             } catch (e: TransientFailure) {
                 store.updateState { it.copy(shuffle = next) }
                 return retryOrGiveUp(run)
@@ -91,7 +91,7 @@ class ShiftEngine(
         return finish(run, ShiftOutcome.DECODE_FAILED)
     }
 
-    private suspend fun runBing(run: Run, target: PixelSize): RunResult {
+    private suspend fun runBing(run: Run, settings: RotationSettings, target: PixelSize): RunResult {
         try {
             val state = store.state.first()
             val archive = bing.fetchArchive(device.bingMarket())
@@ -100,7 +100,7 @@ class ShiftEngine(
             val bytes = bing.download(choice)
             val decoded = decoder.decode(ImageInput.Bytes(bytes), target)
             try {
-                wallpaper.apply(decoded)
+                wallpaper.apply(decoded, settings.homeScreenOnly)
             } finally {
                 decoded.release()
             }
@@ -124,10 +124,10 @@ class ShiftEngine(
     }
 
     /** True when the wallpaper no longer matches the baseline. Unknown on either side = no. */
-    private suspend fun changedElsewhere(): Boolean {
+    private suspend fun changedElsewhere(homeScreenOnly: Boolean): Boolean {
         val baseline = store.state.first().baseline ?: return false
         val current = wallpaper.currentStamp() ?: return false
-        return current != baseline
+        return current.differsFrom(baseline, homeScreenOnly)
     }
 
     private suspend fun retryOrGiveUp(run: Run): RunResult =
