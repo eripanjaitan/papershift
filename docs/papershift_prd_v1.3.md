@@ -237,7 +237,7 @@ The system stores its own copy of the applied wallpaper (e.g. under `/data/syste
 
 | Item | Spec |
 | :--- | :--- |
-| Periodic work | `PeriodicWorkRequestBuilder<ShiftWorker>(12, HOURS, 2, HOURS)` with `setInitialDelay(12, HOURS)`, unique name `papershift.rotation` |
+| Periodic work | `PeriodicWorkRequestBuilder<ShiftWorker>(12, HOURS, 2, HOURS)`, unique name `papershift.rotation`, **no initial delay**: WorkManager already places the first run in the flex window, 10–12 h after enqueue (an extra 12 h delay would push it to ~22 h) |
 | Enqueue policy | `ExistingPeriodicWorkPolicy.UPDATE` — re-enqueued whenever source, network or battery settings change, so new constraints take effect without resetting the cadence |
 | Immediate shift | On Start and on **Shift Now**: `OneTimeWorkRequest` (non-expedited), unique name `papershift.shift_now`, `ExistingWorkPolicy.KEEP` (ignores double taps) |
 | Network constraint | Gallery: `NOT_REQUIRED`. Bing: `CONNECTED`, or `UNMETERED` when "Unmetered networks only" is ON |

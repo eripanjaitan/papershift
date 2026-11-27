@@ -2,7 +2,6 @@ package com.papershift.ui.settings
 
 import android.content.Intent
 import android.net.Uri
-import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,36 +21,35 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.core.content.getSystemService
 import com.papershift.R
+import com.papershift.core.Source
+import com.papershift.ui.UiState
 import com.papershift.ui.components.SectionCard
 
-/** PRD §5.2. Toggles are local placeholders until settings are stored in DataStore. */
+/** PRD §5.2. Stateless: values come from [state], changes go through the callbacks. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    state: UiState,
+    onBack: () -> Unit,
+    onPauseOnBatterySaver: (Boolean) -> Unit,
+    onPauseOnLowBattery: (Boolean) -> Unit,
+    onUnmeteredOnly: (Boolean) -> Unit,
+) {
     val context = LocalContext.current
-    val unrestricted = remember {
-        context.getSystemService<PowerManager>()?.isIgnoringBatteryOptimizations(context.packageName) == true
-    }
+    val settings = state.settings
     val versionName = remember {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
     }
-    var pauseOnSaver by rememberSaveable { mutableStateOf(true) }
-    var pauseOnLow by rememberSaveable { mutableStateOf(true) }
-    var unmeteredOnly by rememberSaveable { mutableStateOf(true) }
 
     Scaffold(
         topBar = {
@@ -79,7 +77,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             SectionCard(title = stringResource(R.string.section_battery)) {
                 InfoRow(
                     stringResource(
-                        if (unrestricted) R.string.battery_usage_unrestricted else R.string.battery_usage_optimized,
+                        if (state.batteryUnrestricted) R.string.battery_usage_unrestricted else R.string.battery_usage_optimized,
                     ),
                 )
                 Text(
@@ -99,20 +97,29 @@ fun SettingsScreen(onBack: () -> Unit) {
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 )
                 InfoRow(stringResource(R.string.oem_helper), secondary = true)
-                SwitchRow(stringResource(R.string.pause_battery_saver), null, pauseOnSaver) { pauseOnSaver = it }
                 SwitchRow(
-                    stringResource(R.string.pause_low_battery),
-                    stringResource(R.string.pause_low_battery_sub),
-                    pauseOnLow,
-                ) { pauseOnLow = it }
+                    title = stringResource(R.string.pause_battery_saver),
+                    subtitle = null,
+                    checked = settings.pauseOnBatterySaver,
+                    onChange = onPauseOnBatterySaver,
+                )
+                SwitchRow(
+                    title = stringResource(R.string.pause_low_battery),
+                    subtitle = stringResource(R.string.pause_low_battery_sub),
+                    checked = settings.pauseOnLowBattery,
+                    onChange = onPauseOnLowBattery,
+                )
             }
 
             SectionCard(title = stringResource(R.string.section_network)) {
+                val isBing = settings.source == Source.Bing
                 SwitchRow(
-                    stringResource(R.string.unmetered_only),
-                    stringResource(R.string.unmetered_only_sub),
-                    unmeteredOnly,
-                ) { unmeteredOnly = it }
+                    title = stringResource(R.string.unmetered_only),
+                    subtitle = stringResource(if (isBing) R.string.unmetered_only_sub else R.string.unmetered_only_gallery),
+                    checked = settings.unmeteredOnly,
+                    onChange = onUnmeteredOnly,
+                    enabled = isBing,
+                )
                 InfoRow(stringResource(R.string.storage_statement), secondary = true)
             }
 
@@ -140,13 +147,20 @@ private fun InfoRow(text: String, secondary: Boolean = false) {
 }
 
 @Composable
-private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(role = Role.Switch) { onChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .clickable(enabled = enabled, role = Role.Switch) { onChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .alpha(if (enabled) 1f else 0.5f),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
@@ -159,6 +173,6 @@ private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChan
             }
         }
         // The row handles clicks, so the switch itself is not separately focusable.
-        Switch(checked = checked, onCheckedChange = null)
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }

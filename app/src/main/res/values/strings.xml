@@ -12,8 +12,37 @@
     <string name="pause_rotation">Pause Rotation</string>
     <string name="shift_now">Shift Now</string>
     <string name="start_helper">Changes your home and lock screen.</string>
+    <string name="folder_change">Change</string>
+    <plurals name="folder_photo_count">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+    <string name="choose_folder_first">Choose a folder to start.</string>
+
+    <!-- Status line (PRD §2.3) -->
     <string name="status_off">Rotation is off</string>
     <string name="status_scheduled">Rotating every 12 hours</string>
+    <string name="status_next_in">Next rotation in about %1$s</string>
+    <string name="status_due">Next rotation any moment now</string>
+    <string name="status_running">Updating wallpaper…</string>
+    <string name="status_waiting_network">Waiting for a connection to update your wallpaper.</string>
+    <string name="status_waiting_unmetered">Waiting for Wi-Fi to update your wallpaper.</string>
+    <string name="status_waiting_battery">Waiting for battery to recover.</string>
+    <string name="status_skipped">Skipped: Battery Saver was on. Next try in about %1$s</string>
+    <string name="status_skipped_no_time">Skipped: Battery Saver was on.</string>
+
+    <!-- Needs-attention banners (PRD §7) -->
+    <string name="attention_folder_missing">Your folder is missing. Tap to choose a new one.</string>
+    <string name="attention_access_lost">PaperShift lost access to your folder. Tap to choose it again.</string>
+    <string name="attention_no_images">This folder has no photos PaperShift can use. Add images or pick another folder.</string>
+    <string name="attention_decode_failed">PaperShift couldn\'t read the images in this folder.</string>
+    <string name="attention_not_allowed">Your device doesn\'t allow changing the wallpaper.</string>
+
+    <!-- Live wallpaper confirmation (EC-09) -->
+    <string name="live_wallpaper_title">Replace live wallpaper?</string>
+    <string name="live_wallpaper_body">A live wallpaper is active. PaperShift will replace it with photos.</string>
+    <string name="live_wallpaper_confirm">Replace</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Settings screen (PRD §5.2) -->
     <string name="back">Back</string>
@@ -28,6 +57,7 @@
     <string name="section_network">Network &amp; Data</string>
     <string name="unmetered_only">Unmetered networks only</string>
     <string name="unmetered_only_sub">Usually Wi-Fi. Bing images never use mobile data.</string>
+    <string name="unmetered_only_gallery">Only used for Bing Daily. My Gallery works offline.</string>
     <string name="storage_statement">PaperShift never saves downloaded or processed images to your device.</string>
     <string name="section_display">Display</string>
     <string name="display_note">Images are automatically center-cropped to fill your screen.</string>

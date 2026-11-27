@@ -9,6 +9,7 @@
 
     <!-- PRD §10: backup and device-to-device transfer are both disabled. -->
     <application
+        android:name=".PaperShiftApp"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
